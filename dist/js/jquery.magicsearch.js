@@ -1,6 +1,15 @@
 'use strict';
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+function _toConsumableArray(arr) {
+    if (Array.isArray(arr)) {
+        for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+            arr2[i] = arr[i];
+        }
+        return arr2;
+    } else {
+        return Array.from(arr);
+    }
+}
 
 /*!
  * MagicSearch - An input plugin based on jquery
@@ -17,9 +26,14 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
  *
  * home page link:
  *   https://www.dingyi1993.com/blog/magicsearch
+ *
+ * Modefied By Mustafa Ghafour
+ * https://www.linkedin.com/in/mustafa-ghafour/
+ * New Feature : Dynamic Ajax Filtering based on Criteria
  */
 
-;(function (factory) {
+;
+(function(factory) {
     'use strict';
 
     if (typeof define === 'function' && define.amd) {
@@ -29,113 +43,114 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
         // no AMD; invoke directly
         factory(typeof jQuery != 'undefined' ? jQuery : window.Zepto);
     }
-})(function ($) {
+})(function($) {
     'use strict';
 
     var
-    //separator of format
-    SEPARATOR = '%',
+        //separator of format
+        SEPARATOR = '%',
 
-
-    //default multi style,unit px
-    DEFAULT_ITEM_WIDTH = 57,
+        AjaxSource = [],
+        //default multi style,unit px
+        DEFAULT_ITEM_WIDTH = 57,
         DEFAULT_ITEM_SPACE = 3,
 
 
-    //default max width when multiple,unit px
-    DEFAULT_INPUT_MAX_WIDTH = 500,
+        //default max width when multiple,unit px
+        DEFAULT_INPUT_MAX_WIDTH = 500,
 
 
-    //max loaded item at a time when show all(min:dropdownMaxItem + 1)
-    ALL_DROPDOWN_NUM = 100,
+        //max loaded item at a time when show all(min:dropdownMaxItem + 1)
+        ALL_DROPDOWN_NUM = 100,
 
 
-    //default search box animate duration,unit ms
-    BOX_ANIMATE_TIME = 200,
+        //default search box animate duration,unit ms
+        BOX_ANIMATE_TIME = 200,
 
 
-    //default search delay,unit ms
-    SEARCH_DELAY = 200,
+        //default search delay,unit ms
+        SEARCH_DELAY = 200,
 
 
-    //default dropdown button width,unit px
-    DROPDOWN_WIDTH = 24,
+        //default dropdown button width,unit px
+        DROPDOWN_WIDTH = 24,
 
 
-    //key code
-    KEY = {
-        BACKSPACE: 8,
-        ENTER: 13,
-        ESC: 27,
-        SPACE: 32,
-        LEFT: 37,
-        UP: 38,
-        RIGHT: 39,
-        DOWN: 40
-    },
+        //key code
+        KEY = {
+            BACKSPACE: 8,
+            ENTER: 13,
+            ESC: 27,
+            SPACE: 32,
+            LEFT: 37,
+            UP: 38,
+            RIGHT: 39,
+            DOWN: 40
+        },
 
 
-    //cache doms string
-    doms = {
-        wrapper: 'magicsearch-wrapper',
-        box: 'magicsearch-box',
-        arrow: 'magicsearch-arrow',
-        loading: 'magicsearch-loading',
-        hidden: 'magicsearch-hidden',
-        items: 'multi-items',
-        item: 'multi-item',
-        close: 'multi-item-close'
-    },
+        //cache doms string
+        doms = {
+            wrapper: 'magicsearch-wrapper',
+            box: 'magicsearch-box',
+            arrow: 'magicsearch-arrow',
+            loading: 'magicsearch-loading',
+            hidden: 'magicsearch-hidden',
+            items: 'multi-items',
+            item: 'multi-item',
+            close: 'multi-item-close'
+        },
         isString = function isString(value) {
-        return $.type(value) === 'string';
-    },
+            return $.type(value) === 'string';
+        },
 
 
-    //transform string which like this : %username%
-    formatParse = function formatParse(format, data) {
-        var fields = format.match(new RegExp('\\' + SEPARATOR + '[^\\' + SEPARATOR + ']+\\' + SEPARATOR, 'g'));
-        if (!fields) {
-            return format;
-        }
-        for (var i = 0; i < fields.length; i++) {
-            fields[i] = fields[i].replace(new RegExp('\\' + SEPARATOR, 'g'), '');
-        }
-        for (var _i = 0; _i < fields.length; _i++) {
-            format = format.replace(SEPARATOR + fields[_i] + SEPARATOR, data[fields[_i]] ? data[fields[_i]] : 'error');
-        }
-        return format;
-    },
-
-    //delete px at ending
-    deletePx = function deletePx(value) {
-        var index = value.lastIndexOf('px');
-        return index < 0 ? Number(value) : Number(value.substring(0, index));
-    },
-
-    //transform to positive num
-    transform2PositiveNum = function transform2PositiveNum(value, key) {
-        if (!$.isNumeric(value)) {
-            value = MagicSearch.defaults[key];
-        } else {
-            value = Math.ceil(Number(value));
-            if (value <= 0) {
-                value = MagicSearch.defaults[key];
+        //transform string which like this : %username%
+        formatParse = function formatParse(format, data) {
+            var fields = format.match(new RegExp('\\' + SEPARATOR + '[^\\' + SEPARATOR + ']+\\' + SEPARATOR, 'g'));
+            if (!fields) {
+                return format;
             }
-        }
-        return value;
-    },
+            for (var i = 0; i < fields.length; i++) {
+                fields[i] = fields[i].replace(new RegExp('\\' + SEPARATOR, 'g'), '');
+            }
+            for (var _i = 0; _i < fields.length; _i++) {
+                format = format.replace(SEPARATOR + fields[_i] + SEPARATOR, data[fields[_i]] ? data[fields[_i]] : 'error');
+            }
+            return format;
+        },
 
-    //constructor
-    MagicSearch = function MagicSearch(element, options) {
-        this.element = element;
-        this.$element = $(element);
-        this.options = options;
-    };
+        //delete px at ending
+        deletePx = function deletePx(value) {
+            var index = value.lastIndexOf('px');
+            return index < 0 ? Number(value) : Number(value.substring(0, index));
+        },
+
+        //transform to positive num
+        transform2PositiveNum = function transform2PositiveNum(value, key) {
+            if (!$.isNumeric(value)) {
+                value = MagicSearch.defaults[key];
+            } else {
+                value = Math.ceil(Number(value));
+                if (value <= 0) {
+                    value = MagicSearch.defaults[key];
+                }
+            }
+            return value;
+        },
+
+        //constructor
+        MagicSearch = function MagicSearch(element, options) {
+            this.element = element;
+            this.$element = $(element);
+            this.options = options;
+        };
 
     MagicSearch.defaults = {
         dataSource: [], //array or string or function
         type: '', //string
         ajaxOptions: {}, //object
+        AjaxUrl: '',
         id: '', //string
         hidden: false, //boolean
         fields: '', //string or array
@@ -291,7 +306,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 var $loading = $('<div class="' + doms.loading + '"><div></div></div>');
                 $magicsearch_wrapper.append($loading);
 
-                var loadingTimeout = setTimeout(function () {
+                var loadingTimeout = setTimeout(function() {
                     $magicsearch_wrapper.find('.' + doms.loading).find('div').show();
                 }, 500);
 
@@ -306,7 +321,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 };
                 ajaxOptions = $.extend({}, ajaxOptions, this.options.ajaxOptions);
                 var success = ajaxOptions.success;
-                ajaxOptions.success = function (data) {
+                ajaxOptions.success = function(data) {
                     clearTimeout(loadingTimeout);
                     _this.options.dataSource = data;
                     $magicsearch_wrapper.find('.' + doms.loading).remove();
@@ -383,12 +398,12 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 }
             }
             if (!$.isFunction(this.options.success)) {
-                this.options.success = function ($input, data) {
+                this.options.success = function($input, data) {
                     return true;
                 };
             }
             if (!$.isFunction(this.options.disableRule)) {
-                this.options.disableRule = function (data) {
+                this.options.disableRule = function(data) {
                     return false;
                 };
             }
@@ -464,22 +479,33 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 $input.val('');
             }
         },
-        getDataSource: function getDataSource() {
-            var dataSource = this.options.dataSource;
-            if (this.props.isFirstGetDataSource) {
-                var objDataSource = {};
-                for (var i = 0; i < dataSource.length; i++) {
-                    for (var key in dataSource[i]) {
-                        this.options.dataSource[i][key] = String(dataSource[i][key]);
+        getDataSource: async function getDataSource() {
+
+            var _self = this;
+
+            $.get(_self.options.AjaxUrl + '?criteria=' + $(_self)[0].$element.val(), function(data) {
+                AjaxSource = data;
+                _self.options.dataSource = data;
+
+                var dataSource = _self.options.dataSource;
+                if (_self.props.isFirstGetDataSource) {
+                    var objDataSource = {};
+                    for (var i = 0; i < dataSource.length; i++) {
+                        for (var key in dataSource[i]) {
+                            _self.options.dataSource[i][key] = String(dataSource[i][key]);
+                        }
                     }
+                    _self.props.isFirstGetDataSource = false;
+                    for (var _i2 = 0; _i2 < dataSource.length; _i2++) {
+                        objDataSource[dataSource[_i2][_self.options.id]] = dataSource[_i2];
+                    }
+                    _self.props.objDataSource = objDataSource;
+
                 }
-                this.props.isFirstGetDataSource = false;
-                for (var _i2 = 0; _i2 < dataSource.length; _i2++) {
-                    objDataSource[dataSource[_i2][this.options.id]] = dataSource[_i2];
-                }
-                this.props.objDataSource = objDataSource;
-            }
-            return this.options.dataSource;
+                return _self.options.dataSource;
+            });
+
+
         },
         setData: function setData() {
             var $input = this.$element,
@@ -552,7 +578,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 $magicsearch_wrapper.find('.' + doms.item + '[data-id="' + delIdArr[i] + '"]').fadeOut(400, delCallBack);
                 idArr.splice(idArr.indexOf(delIdArr[i]), 1);
             }
-            setTimeout(function () {
+            setTimeout(function() {
                 var maxLineItem = parseInt((styles.maxWidth - (options.dropdownBtn ? DROPDOWN_WIDTH : 0) - styles.borderLeftWidth - styles.borderRightWidth - that.props.multiStyle.space) / (that.props.multiStyle.width + that.props.multiStyle.space));
                 var lineNum = parseInt(idArr.length / maxLineItem);
                 $input.attr('data-id', idArr.join(','));
@@ -581,196 +607,247 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             }, 400);
             return this;
         },
-        searchData: function searchData(isAll, isScroll) {
-            var $input = this.$element,
-                $magicsearch_box = $input.parent().find('.' + doms.box);
+        searchData: async function searchData(isAll, isScroll) {
+            var _self = this;
 
-            var options = this.options,
-                dataJson = this.getDataSource(),
-                ids = $input.attr('data-id'),
-                idArr = ids ? ids.split(',') : [],
-                inputVal = $.trim($input.val()),
-                htmlStr = '',
-                data = [],
-                isAppendHtml = true;
+            $.get(_self.options.AjaxUrl + '?criteria=' + $(_self)[0].$element.val(), function(data) {
+                AjaxSource = data;
+                _self.options.dataSource = data;
 
-            //if is not scroll,clean all items first
-            if (isScroll !== true) {
-                $magicsearch_box.html('');
-            }
-            if (inputVal === '' && !isAll) {
-                return this;
-            }
-            //get the match data
-            if (isAll) {
-                var page = $input.data('page') || 1;
-                data = dataJson.slice(0);
-                //skip selected data
-                if (!options.showSelected) {
-                    for (var i = 0, num = 0; i < data.length; i++) {
-                        var index = idArr.indexOf(data[i][options.id]);
-                        if (index > -1) {
-                            data.splice(i, 1);
-                            num++;
-                            i--;
-                            if (num == idArr.length) {
+                var dataSource = _self.options.dataSource;
+                if (_self.props.isFirstGetDataSource) {
+                    var objDataSource = {};
+                    for (var i = 0; i < dataSource.length; i++) {
+                        for (var key in dataSource[i]) {
+                            _self.options.dataSource[i][key] = String(dataSource[i][key]);
+                        }
+                    }
+                    _self.props.isFirstGetDataSource = false;
+                    for (var _i2 = 0; _i2 < dataSource.length; _i2++) {
+                        objDataSource[dataSource[_i2][_self.options.id]] = dataSource[_i2];
+                    }
+                    _self.props.objDataSource = objDataSource;
+
+                }
+
+                var $input = _self.$element,
+                    $magicsearch_box = $input.parent().find('.' + doms.box);
+
+                var options = _self.options,
+                    dataJson = data,
+                    ids = $input.attr('data-id'),
+                    idArr = ids ? ids.split(',') : [],
+                    inputVal = $.trim($input.val()),
+                    htmlStr = '',
+                    data = [],
+                    isAppendHtml = true;
+
+                //if is not scroll,clean all items first
+                if (isScroll !== true) {
+                    $magicsearch_box.html('');
+                }
+                if (inputVal === '' && !isAll) {
+                    return _self;
+                }
+                //get the match data
+                if (isAll) {
+                    var page = $input.data('page') || 1;
+                    data = dataJson.slice(0);
+                    //skip selected data
+                    if (!options.showSelected) {
+                        for (var i = 0, num = 0; i < data.length; i++) {
+                            var index = idArr.indexOf(data[i][options.id]);
+                            if (index > -1) {
+                                data.splice(i, 1);
+                                num++;
+                                i--;
+                                if (num == idArr.length) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    //if page less than total page,page plus one
+                    if (page <= Math.ceil(data.length / ALL_DROPDOWN_NUM)) {
+                        $input.data('page', page + 1);
+                    }
+                    data = data.slice((page - 1) * ALL_DROPDOWN_NUM, page * ALL_DROPDOWN_NUM);
+                    //will not appending html if data's length is zero when scrolling
+                    if (page != 1 && data.length === 0) {
+                        isAppendHtml = false;
+                    }
+                } else {
+                    var inputVals = [].concat(_toConsumableArray(new Set(inputVal.toLowerCase().split(' '))));
+                    var inputData = [];
+                    for (var _i3 = 0; _i3 < inputVals.length; _i3++) {
+                        if (inputVals[_i3] === '') {
+                            continue;
+                        }
+                        inputData.push({
+                            value: inputVals[_i3],
+                            flag: false
+                        });
+                    }
+                    //search match data
+                    for (var _i4 = 0; _i4 < dataJson.length; _i4++) {
+                        //skip selected
+                        if (!options.showSelected) {
+                            if (idArr.includes(dataJson[_i4][options.id])) {
+                                continue;
+                            }
+                        }
+                        inputData = inputData.map(function(item) {
+                            item.flag = false;
+                            return item;
+                        });
+                        for (var j = 0; j < options.fields.length; j++) {
+                            for (var k = 0; k < inputData.length; k++) {
+                                if (dataJson[_i4][options.fields[j]] !== null && dataJson[_i4][options.fields[j]].toLowerCase().includes(inputData[k].value)) {
+                                    inputData[k].flag = true;
+                                }
+                            }
+                            var isMatch = inputData.every(function(item) {
+                                return item.flag;
+                            });
+                            if (isMatch) {
+                                data.push(dataJson[_i4]);
                                 break;
                             }
                         }
-                    }
-                }
-                //if page less than total page,page plus one
-                if (page <= Math.ceil(data.length / ALL_DROPDOWN_NUM)) {
-                    $input.data('page', page + 1);
-                }
-                data = data.slice((page - 1) * ALL_DROPDOWN_NUM, page * ALL_DROPDOWN_NUM);
-                //will not appending html if data's length is zero when scrolling
-                if (page != 1 && data.length === 0) {
-                    isAppendHtml = false;
-                }
-            } else {
-                var inputVals = [].concat(_toConsumableArray(new Set(inputVal.toLowerCase().split(' '))));
-                var inputData = [];
-                for (var _i3 = 0; _i3 < inputVals.length; _i3++) {
-                    if (inputVals[_i3] === '') {
-                        continue;
-                    }
-                    inputData.push({ value: inputVals[_i3], flag: false });
-                }
-                //search match data
-                for (var _i4 = 0; _i4 < dataJson.length; _i4++) {
-                    //skip selected
-                    if (!options.showSelected) {
-                        if (idArr.includes(dataJson[_i4][options.id])) {
-                            continue;
-                        }
-                    }
-                    inputData = inputData.map(function (item) {
-                        item.flag = false;
-                        return item;
-                    });
-                    for (var j = 0; j < options.fields.length; j++) {
-                        for (var k = 0; k < inputData.length; k++) {
-                            if (dataJson[_i4][options.fields[j]] !== null && dataJson[_i4][options.fields[j]].toLowerCase().includes(inputData[k].value)) {
-                                inputData[k].flag = true;
-                            }
-                        }
-                        var isMatch = inputData.every(function (item) {
-                            return item.flag;
-                        });
-                        if (isMatch) {
-                            data.push(dataJson[_i4]);
+                        if (data.length >= options.maxShow) {
                             break;
                         }
                     }
-                    if (data.length >= options.maxShow) {
-                        break;
-                    }
                 }
-            }
 
-            //generate html string
-            if (data.length === 0) {
-                var noResult = options.noResult ? options.noResult : '&#x672a;&#x641c;&#x7d22;&#x5230;&#x7ed3;&#x679c;';
-                htmlStr = '<span class="no-result">' + noResult + '</span>';
-            } else {
-                //delete empty input
-                var _inputVals = [].concat(_toConsumableArray(new Set(inputVal.split(' ')))).filter(function (item) {
-                    return item !== '';
-                });
-                var tempArr = [];
-                for (var _i5 = 0; _i5 < _inputVals.length - 1; _i5++) {
-                    for (var _j = _i5 + 1; _j < _inputVals.length; _j++) {
-                        tempArr.push(_inputVals[_i5] + ' ' + _inputVals[_j]);
+                //generate html string
+                if (data.length === 0) {
+                    var noResult = options.noResult ? options.noResult : '&#x672a;&#x641c;&#x7d22;&#x5230;&#x7ed3;&#x679c;';
+                    htmlStr = '<span class="no-result">' + noResult + '</span>';
+                } else {
+                    //delete empty input
+                    var _inputVals = [].concat(_toConsumableArray(new Set(inputVal.split(' ')))).filter(function(item) {
+                        return item !== '';
+                    });
+                    var tempArr = [];
+                    for (var _i5 = 0; _i5 < _inputVals.length - 1; _i5++) {
+                        for (var _j = _i5 + 1; _j < _inputVals.length; _j++) {
+                            tempArr.push(_inputVals[_i5] + ' ' + _inputVals[_j]);
+                        }
                     }
-                }
-                _inputVals = _inputVals.concat(tempArr);
-                //locate highlight chars
-                var dataHighlight = void 0;
-                if (!isAll) {
-                    dataHighlight = $.extend(true, [], data);
-                    data.forEach(function (item, index) {
-                        options.fields.forEach(function (field) {
-                            var posArr = [];
-                            if (item[field] !== null) {
-                                for (var _i6 = 0; _i6 < item[field].length; _i6++) {
-                                    posArr[_i6] = 0;
+                    _inputVals = _inputVals.concat(tempArr);
+                    //locate highlight chars
+                    var dataHighlight = void 0;
+                    if (!isAll) {
+                        dataHighlight = $.extend(true, [], data);
+                        data.forEach(function(item, index) {
+                            options.fields.forEach(function(field) {
+                                var posArr = [];
+                                if (item[field] !== null) {
+                                    for (var _i6 = 0; _i6 < item[field].length; _i6++) {
+                                        posArr[_i6] = 0;
+                                    }
+                                    _inputVals.forEach(function(value) {
+                                        if (item[field]) {
+                                            try {
+                                                var position = item[field].toLowerCase().indexOf(value.toLowerCase());
+                                                if (position > -1) {
+                                                    for (var _i7 = position; _i7 < value.length + position; _i7++) {
+                                                        posArr[_i7] = 1;
+                                                    }
+                                                }
+                                            } catch {}
+                                        }
+                                    });
                                 }
-                                _inputVals.forEach(function (value) {
-                                    var position = item[field].toLowerCase().indexOf(value.toLowerCase());
-                                    if (position > -1) {
-                                        for (var _i7 = position; _i7 < value.length + position; _i7++) {
-                                            posArr[_i7] = 1;
+                                var tmpPosArr = [];
+                                var hasStarted = false,
+                                    start = -1,
+                                    length = 0;
+                                for (var _i8 = posArr.length - 1; _i8 >= 0; _i8--) {
+                                    if (posArr[_i8] == 1) {
+                                        if (!hasStarted) {
+                                            hasStarted = true;
+                                            start = _i8;
+                                        } else {
+                                            start--;
+                                        }
+                                        length++;
+                                        if (_i8 === 0) {
+                                            tmpPosArr.push({
+                                                start: start,
+                                                length: length
+                                            });
+                                        }
+                                    } else {
+                                        if (hasStarted) {
+                                            hasStarted = false;
+                                            tmpPosArr.push({
+                                                start: start,
+                                                length: length
+                                            });
+                                            length = 0;
                                         }
                                     }
-                                });
-                            }
-                            var tmpPosArr = [];
-                            var hasStarted = false,
-                                start = -1,
-                                length = 0;
-                            for (var _i8 = posArr.length - 1; _i8 >= 0; _i8--) {
-                                if (posArr[_i8] == 1) {
-                                    if (!hasStarted) {
-                                        hasStarted = true;
-                                        start = _i8;
-                                    } else {
-                                        start--;
-                                    }
-                                    length++;
-                                    if (_i8 === 0) {
-                                        tmpPosArr.push({ start: start, length: length });
-                                    }
-                                } else {
-                                    if (hasStarted) {
-                                        hasStarted = false;
-                                        tmpPosArr.push({ start: start, length: length });
-                                        length = 0;
-                                    }
                                 }
-                            }
-                            if (dataHighlight[index][field] !== undefined) {
-                                dataHighlight[index][field] = tmpPosArr;
-                            }
+                                if (dataHighlight[index][field] !== undefined) {
+                                    dataHighlight[index][field] = tmpPosArr;
+                                }
+                            });
                         });
+                    }
+
+                    htmlStr += '<ul>';
+                    data.forEach(function(item, index) {
+                        var tmpItem = $.extend({}, item);
+                        htmlStr += '<li class="';
+                        htmlStr += options.disableRule(item) ? 'disabled' : 'enabled';
+                        if (options.showSelected) {
+                            htmlStr += idArr.includes(item[options.id]) ? ' selected' : '';
+                        }
+                        htmlStr += '" data-id="' + (item[options.id] === undefined ? '' : item[options.id]) + '"';
+                        if (!isAll) {
+                            options.fields.forEach(function(field) {
+                                if (item[field] !== null) {
+                                    dataHighlight[index][field].forEach(function(value) {
+                                        var matchStr = tmpItem[field].substr(value.start, value.length);
+                                        tmpItem[field] = tmpItem[field].replace(new RegExp(matchStr, 'i'), '<span class="keyword">' + matchStr + '</span>');
+                                    });
+                                }
+                            });
+                        }
+                        //1
+                        htmlStr += ' title="' + formatParse(options.format, item) + '">' + formatParse(options.format, tmpItem) + '</li>';
                     });
+                    htmlStr += '</ul>';
                 }
 
-                htmlStr += '<ul>';
-                data.forEach(function (item, index) {
-                    var tmpItem = $.extend({}, item);
-                    htmlStr += '<li class="';
-                    htmlStr += options.disableRule(item) ? 'disabled' : 'enabled';
-                    if (options.showSelected) {
-                        htmlStr += idArr.includes(item[options.id]) ? ' selected' : '';
+                //create dom
+                if (isAll) {
+                    if (isAppendHtml) {
+                        $magicsearch_box.html($magicsearch_box.html() + htmlStr);
                     }
-                    htmlStr += '" data-id="' + (item[options.id] === undefined ? '' : item[options.id]) + '"';
-                    if (!isAll) {
-                        options.fields.forEach(function (field) {
-                            if (item[field] !== null) {
-                                dataHighlight[index][field].forEach(function (value) {
-                                    var matchStr = tmpItem[field].substr(value.start, value.length);
-                                    tmpItem[field] = tmpItem[field].replace(new RegExp(matchStr, 'i'), '<span class="keyword">' + matchStr + '</span>');
-                                });
-                            }
-                        });
-                    }
-                    htmlStr += ' title="' + formatParse(options.format, item) + '">' + formatParse(options.format, tmpItem) + '</li>';
-                });
-                htmlStr += '</ul>';
-            }
-
-            //create dom
-            if (isAll) {
-                if (isAppendHtml) {
-                    $magicsearch_box.html($magicsearch_box.html() + htmlStr);
+                    $magicsearch_box.addClass('all');
+                } else {
+                    $magicsearch_box.html(htmlStr);
+                    $magicsearch_box.removeClass('all').css('max-height', 'none');
                 }
-                $magicsearch_box.addClass('all');
-            } else {
-                $magicsearch_box.html(htmlStr);
-                $magicsearch_box.removeClass('all').css('max-height', 'none');
-            }
-            return this;
+                return _self;
+            }).then(function() {
+                var $input = _self.$element,
+                    $magicsearch_wrapper = $input.parent(),
+                    $magicsearch_box = $magicsearch_wrapper.find('.' + doms.box);
+                if ($magicsearch_box.is(':visible')) {
+                    return false;
+                }
+                //rotate the dropdown button 180deg
+                if (_self.options.dropdownBtn) {
+                    var $magicsearch_arrow = $magicsearch_wrapper.find('.' + doms.arrow);
+                    $magicsearch_arrow.removeClass('arrow-rotate-360');
+                    $magicsearch_arrow.addClass('arrow-rotate-180');
+                }
+                $magicsearch_box.slideDown(BOX_ANIMATE_TIME);
+            })
         },
         showSearchBox: function showSearchBox(callback) {
             var $input = this.$element,
@@ -810,10 +887,10 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                 $magicsearch_arrow.removeClass('arrow-rotate-180');
                 $magicsearch_arrow.addClass('arrow-rotate-360');
             }
-            setTimeout(function () {
+            setTimeout(function() {
                 $magicsearch_box.scrollTop(0);
             }, BOX_ANIMATE_TIME - 1);
-            $magicsearch_box.slideUp(BOX_ANIMATE_TIME, function () {
+            $magicsearch_box.slideUp(BOX_ANIMATE_TIME, function() {
                 $magicsearch_box.html('');
             });
             return this;
@@ -834,8 +911,9 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             }
             var maxLineItem = parseInt((styles.maxWidth - (options.dropdownBtn ? DROPDOWN_WIDTH : 0) - styles.borderLeftWidth - styles.borderRightWidth - that.props.multiStyle.space) / (that.props.multiStyle.width + that.props.multiStyle.space));
 
+            //edit multi value 
             //create item and insert into items
-            var $item = $('<div class="' + doms.item + '" data-id="' + data[options.id] + '" title="' + formatParse(options.format, data) + '"><span>' + formatParse(SEPARATOR + options.multiField + SEPARATOR, data) + '</span><a class="' + doms.close + '" data-id="' + data[options.id] + '" href="javascript:;"></a></div>');
+            var $item = $('<div class="' + doms.item + '" data-id="' + data[options.id] + '" title="' + formatParse(options.format, data) + '"><span>' + formatParse(options.format, data) + '</span><a class="' + doms.close + '" data-id="' + data[options.id] + '" href="javascript:;"></a></div>');
             $item.css({
                 'height': styles.sightHeight - that.props.multiStyle.space * 2,
                 'width': that.props.multiStyle.width,
@@ -862,18 +940,18 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             }
 
             //bind click event on delete button
-            $item.find('.' + doms.close).click(function () {
+            $item.find('.' + doms.close).click(function() {
                 that.deleteData($(this).attr('data-id')).hideSearchBox();
             });
             $magicsearch_wrapper.find('.' + doms.items).append($item);
         }
     };
 
-    $.fn.magicsearch = function (options) {
+    $.fn.magicsearch = function(options) {
         var hasDropdownBtn = false;
         var searchTimeout = null;
         var preInput = '';
-        var jqo = this.each(function () {
+        var jqo = this.each(function() {
             var $this = $(this);
             var magicSearch = $.data(this, 'magicsearch');
             if (magicSearch) {
@@ -899,8 +977,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                     });
                     $magicsearch_box.unbind('scroll');
                     $this.data('page', 1);
-                    magicSearch.searchData(true).showSearchBox(function () {
-                        $magicsearch_box.on('scroll', function (e) {
+                    magicSearch.searchData(true).showSearchBox(function() {
+                        $magicsearch_box.on('scroll', function(e) {
                             if (this.scrollHeight - $(this).scrollTop() < 300) {
                                 magicSearch.searchData(true, true);
                             }
@@ -908,7 +986,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                     });
                 }
             };
-            $this.off().on('keyup', function (e) {
+            $this.off().on('keyup', function(e) {
                 var $_this = $(this);
                 if (e.which == KEY.ESC) {
                     $_this.val('').focus();
@@ -968,14 +1046,14 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                             return;
                         }
                         clearTimeout(searchTimeout);
-                        searchTimeout = setTimeout(function () {
-                            magicSearch.searchData().showSearchBox();
+                        searchTimeout = setTimeout(function() {
+                            magicSearch.searchData();
                         }, SEARCH_DELAY);
                     } else {
                         magicSearch.hideSearchBox();
                     }
                 }
-            }).on('keydown', function (e) {
+            }).on('keydown', function(e) {
                 var $_this = $(this);
                 if (e.which == KEY.ESC) {} else if (e.which == KEY.UP) {
                     return false;
@@ -1008,26 +1086,26 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                         }
                     }
                 }
-            }).on('focus', function () {
+            }).on('focus', function() {
                 $magicsearch_wrapper.addClass('focus');
                 if (!selfOptions.isClear && $this.val() !== '' && $this.attr('data-id') === '') {
-                    magicSearch.searchData().showSearchBox();
+                    magicSearch.searchData();
                 } else if (selfOptions.focusShow) {
                     dropdown();
                 }
-            }).on('blur', function () {
+            }).on('blur', function() {
                 $magicsearch_wrapper.removeClass('focus');
                 magicSearch.hideSearchBox();
             });
 
-            $magicsearch_box.off().on('mousedown', 'ul', function () {
+            $magicsearch_box.off().on('mousedown', 'ul', function() {
                 return false;
-            }).on('mouseenter', 'li', function () {
+            }).on('mouseenter', 'li', function() {
                 $(this).parent().find('li.ishover').removeClass('ishover');
                 $(this).addClass('ishover');
-            }).on('mouseleave', 'li', function () {
+            }).on('mouseleave', 'li', function() {
                 $(this).removeClass('ishover');
-            }).on('click', 'li', function () {
+            }).on('click', 'li', function() {
                 var $li = $(this);
                 if ($li.hasClass('selected') && selfOptions.multiple) {
                     magicSearch.deleteData($li.attr('data-id')).hideSearchBox();
@@ -1039,11 +1117,11 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
             //When the option of dropdownBtn is true,bind the related event
             if (selfOptions.dropdownBtn) {
                 hasDropdownBtn = true;
-                $magicsearch_wrapper.on('click', '.' + doms.arrow, function () {
+                $magicsearch_wrapper.on('click', '.' + doms.arrow, function() {
                     return dropdown();
                 });
             }
-            $this.on('clear', function () {
+            $this.on('clear', function() {
                 $this.val('');
                 if (selfOptions.multiple) {
                     if (selfOptions.showMultiSkin) {
@@ -1060,7 +1138,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                         $magicsearch_wrapper.find('.' + doms.hidden).val('');
                     }
                 }
-            }).on('update', function (e, options) {
+            }).on('update', function(e, options) {
                 //update dataSource
                 if (options.dataSource !== undefined) {
                     var tmpDataSource = options.dataSource;
@@ -1086,26 +1164,26 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
                     magicSearch.props.isFirstGetDataSource = true;
                     magicSearch.options.dataSource = tmpDataSource;
                 }
-            }).on('set', function (e, options) {
+            }).on('set', function(e, options) {
                 var originId = magicSearch.$element.attr('data-id');
                 var multi = magicSearch.options.multiple;
                 magicSearch.destroy();
                 magicSearch.$element.attr('data-id', options.override || !multi ? options.id : [].concat(_toConsumableArray(new Set((originId ? originId.split(',') : []).concat(options.id.split(','))))));
                 magicSearch.$element.magicsearch(magicSearch.options);
-            }).on('destroy', function () {
+            }).on('destroy', function() {
                 magicSearch.destroy();
             });
-            $magicsearch_wrapper.on('click', '.' + doms.items, function (e) {
+            $magicsearch_wrapper.on('click', '.' + doms.items, function(e) {
                 if ($(e.target).is('.' + doms.items)) {
                     $this.focus();
                 }
-            }).on('mousedown', '.' + doms.items, function () {
+            }).on('mousedown', '.' + doms.items, function() {
                 return false;
             });
         });
 
         if (hasDropdownBtn && !window.MagicSearch.hasBindBody) {
-            $('body').on('mousedown', function (e) {
+            $('body').on('mousedown', function(e) {
                 var $target = $(e.target),
                     $magicsearch_wrapper = $(this).find('.' + doms.wrapper + ' .' + doms.box + ':visible').first().parent(),
                     $input = $magicsearch_wrapper.find('input:text');
