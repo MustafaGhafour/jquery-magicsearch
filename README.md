@@ -1,29 +1,35 @@
-# jquery-magicsearch
+# jquery-magicsearch-plus
 
 an input plugin based on jquery
-
-[![Build Status](https://travis-ci.org/dingyi1993/jquery-magicsearch.svg?branch=master)](https://travis-ci.org/dingyi1993/jquery-magicsearch)
-[![NPM version](https://img.shields.io/npm/v/magicsearch.svg)](https://www.npmjs.com/package/magicsearch)
-[![Downloads](https://img.shields.io/npm/dt/magicsearch.svg)](https://www.npmjs.com/package/magicsearch)
-
-view on my home page,[click here](https://www.dingyi1993.com/blog/magicsearch)
+ 
 
 ## Changes Log
 
-### v1.0.4 2019-01-24
+### v1.0.4.1 2019-06-27
 
-1. Feature: Able to set selected item programmatically [#6](https://github.com/dingyi1993/jquery-magicsearch/issues/6)
+1. Feature: Able to set criteria to enable dynamic filtering through Ajax , tested on singile and multiple autocomplete
 
-### v1.0.3 2017-05-01
+Using with Asp.net Mvc :
 
-1. Fix issue [#1](https://github.com/dingyi1993/jquery-magicsearch/issues/1)
-
-### v1.0.2 2016-09-12
-
-1. change src to es6
-2. hide search box when click close btn
-3. update examples
-
-### v1.0.1 2016-09-06
-
-1. fix class name 'hover' to 'focus'
+ $('#CountryId').magicsearch({
+            id: 'Value', 
+            format: '%Name% · %Value%',
+            fields: ['Name', 'Value'],
+            noResult: 'no result found',
+            dataSource: "@Url.Action("SearchCountris", "Utility", new { Area = "Common" })",
+            AjaxUrl: "@Url.Action("SearchCountris", "Utility", new { Area = "Common" })",
+            type: 'ajax',
+            ajaxOptions: {
+                success: function(data) {
+                    alert('This is dynamic filtering!');
+                }
+            },
+        });
+ 
+  <div class="form-group">
+        @Html.LabelFor(model => model.CountryId, htmlAttributes: new { @class = "control-label col-md-2" })
+        <div class="col-md-10">
+            @Html.EditorFor(model => model.CountryId, new { htmlAttributes = new { @class = "form-control", id = "CountryId" , type = "text" , autocomplete = "off", data_id = ViewBag.CountryId } })
+            @Html.ValidationMessageFor(model => model.CountryId, "", new { @class = "text-danger" })
+        </div>
+    </div>
