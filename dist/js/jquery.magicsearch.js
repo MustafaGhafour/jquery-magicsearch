@@ -50,6 +50,7 @@ function _toConsumableArray(arr) {
         //separator of format
         SEPARATOR = '%',
 
+
         AjaxSource = [],
         //default multi style,unit px
         DEFAULT_ITEM_WIDTH = 57,
@@ -487,9 +488,9 @@ function _toConsumableArray(arr) {
                 AjaxSource = data;
                 _self.options.dataSource = data;
 
+                var objDataSource = {};
                 var dataSource = _self.options.dataSource;
                 if (_self.props.isFirstGetDataSource) {
-                    var objDataSource = {};
                     for (var i = 0; i < dataSource.length; i++) {
                         for (var key in dataSource[i]) {
                             _self.options.dataSource[i][key] = String(dataSource[i][key]);
@@ -502,6 +503,7 @@ function _toConsumableArray(arr) {
                     _self.props.objDataSource = objDataSource;
 
                 }
+                _self.props.objDataSource = dataSource;
                 return _self.options.dataSource;
             });
 
@@ -515,7 +517,7 @@ function _toConsumableArray(arr) {
                 $ishover = $magicsearch_box.find('li.ishover');
             var options = this.options,
                 ids = $input.attr('data-id'),
-                data = this.props.objDataSource[$ishover.attr('data-id')];
+                data = this.props.objDataSource[$ishover.attr('data-id')] ? this.props.objDataSource[$ishover.attr('data-id')] : this.props.objDataSource[0];
             if (options.multiple) {
                 if ($magicsearch_box.is(':hidden')) {
                     return;
@@ -626,9 +628,10 @@ function _toConsumableArray(arr) {
                     for (var _i2 = 0; _i2 < dataSource.length; _i2++) {
                         objDataSource[dataSource[_i2][_self.options.id]] = dataSource[_i2];
                     }
-                    _self.props.objDataSource = objDataSource;
 
-                }
+                }                   
+                _self.props.objDataSource = dataSource;
+
 
                 var $input = _self.$element,
                     $magicsearch_box = $input.parent().find('.' + doms.box);
